@@ -728,7 +728,46 @@ ytpSetI.innerHTML+=`<br><b style='font-size:18px' >YT PRO Settings</b>
 
 </div>
 
-<div><input type="url" placeholder="Enter Youtube URL" id="ytproUrlInput" ></div>
+<div style="position: relative; width: 100%; max-width: 600px; margin: 10px auto;">
+    <input 
+        type="url" 
+        placeholder="Enter YouTube URL" 
+        id="ytproUrlInput"
+        style="width: 100%;
+               padding: 14px 50px 14px 20px;
+               font-size: 16px;
+               border: 2px solid #e5e7eb;
+               border-radius: 12px;
+               outline: none;
+               transition: all 0.3s ease;
+               box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);"
+    >
+    
+    <!-- Right Side Button -->
+    <button 
+        id="ytSearchBtn"
+        style="position: absolute;
+               right: 6px;
+               top: 50%;
+               transform: translateY(-50%);
+               width: 42px;
+               height: 42px;
+               background: #ff0000;
+               border: none;
+               border-radius: 10px;
+               cursor: pointer;
+               display: flex;
+               align-items: center;
+               justify-content: center;
+               transition: all 0.3s ease;"
+    >
+        <img 
+            src="https://cdn-icons-png.flaticon.com/128/9903/9903638.png" 
+            alt="Search"
+            style="width: 22px; height: 22px; filter: brightness(0) invert(1);"
+        >
+    </button>
+</div>
 <br>
 <button data-action="hearts">Liked Videos
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="${isD ? "#ccc" : "#444"}" viewBox="0 0 16 16">

@@ -726,48 +726,117 @@ ytpSetI.innerHTML+=`<br><b style='font-size:18px' >YT PRO Settings</b>
 <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
 </svg>
 
+<div style="position: relative; width: 100%; max-width: 640px; margin: 20px auto;">
+
+    <!-- Main Container -->
+    <div style="display: flex; align-items: center; position: relative;">
+        
+        <!-- Input Field -->
+        <input 
+            type="url" 
+            placeholder="Enter YouTube URL" 
+            id="ytproUrlInput"
+            style="flex: 1;
+                   height: 52px;
+                   padding: 0 22px;
+                   font-size: 16px;
+                   font-family: 'Segoe UI', system-ui, sans-serif;
+                   border: 2px solid #e5e7eb;
+                   border-radius: 12px 0 0 12px;
+                   outline: none;
+                   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                   transition: all 0.3s ease;"
+        >
+        
+        <!-- Button -->
+        <button 
+            id="ytSearchBtn"
+            style="height: 52px;
+                   padding: 0 26px;
+                   background: #ff0000;
+                   border: 2px solid #ff0000;
+                   border-radius: 0 12px 12px 0;
+                   cursor: pointer;
+                   display: flex;
+                   align-items: center;
+                   justify-content: center;
+                   transition: all 0.3s ease;
+                   box-shadow: 0 2px 8px rgba(255, 0, 0, 0.25);"
+        >
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 5.14v14l11-7z"/>
+            </svg>
+        </button>
+
+        <!-- Tooltip - Right Side of Input -->
+        <div id="ytErrorTooltip" 
+             style="position: absolute;
+                    top: 50%;
+                    right: 68px;           /* Button এর বামে */
+                    transform: translateY(-50%);
+                    background: #ef4444;
+                    color: white;
+                    font-size: 13px;
+                    padding: 6px 14px;
+                    border-radius: 6px;
+                    white-space: nowrap;
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+                    display: none;
+                    z-index: 10;
+                    font-family: 'Segoe UI', system-ui, sans-serif;
+                    pointer-events: none;">
+        </div>
+    </div>
+
+    <script>
+        function isValidYouTubeUrl(url) {
+            const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+            return youtubeRegex.test(url);
+        }
+
+        const input = document.getElementById('ytproUrlInput');
+        const tooltip = document.getElementById('ytErrorTooltip');
+        const button = document.getElementById('ytSearchBtn');
+
+        function showError(message) {
+            input.style.borderColor = '#ef4444';
+            tooltip.textContent = message;
+            tooltip.style.display = 'block';
+            
+            // Auto dismiss after 2 seconds
+            setTimeout(() => {
+                tooltip.style.display = 'none';
+            }, 2000);
+        }
+
+        button.addEventListener('click', function() {
+            const value = input.value.trim();
+
+            // Reset
+            input.style.borderColor = '#e5e7eb';
+            tooltip.style.display = 'none';
+
+            if (value === '') {
+                showError('Please enter a YouTube URL');
+            } 
+            else if (!isValidYouTubeUrl(value)) {
+                showError('Please enter a valid YouTube link');
+            } 
+            else {
+                input.style.borderColor = '#22c55e';
+                tooltip.style.display = 'none';
+                console.log('✅ Valid YouTube URL:', value);
+            }
+        });
+
+        // Clear error while typing
+        input.addEventListener('input', function() {
+            input.style.borderColor = '#e5e7eb';
+            tooltip.style.display = 'none';
+        });
+    </script>
 </div>
 
-<div style="position: relative; width: 100%; max-width: 600px; margin: 10px auto;">
-    <input 
-        type="url" 
-        placeholder="Enter YouTube URL" 
-        id="ytproUrlInput"
-        style="width: 100%;
-               padding: 14px 50px 14px 20px;
-               font-size: 16px;
-               border: 2px solid #e5e7eb;
-               border-radius: 12px;
-               outline: none;
-               transition: all 0.3s ease;
-               box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);"
-    >
-    
-    <!-- Right Side Button -->
-    <button 
-        id="ytSearchBtn"
-        style="position: absolute;
-               right: 6px;
-               top: 50%;
-               transform: translateY(-50%);
-               width: 42px;
-               height: 42px;
-               background: #ff0000;
-               border: none;
-               border-radius: 10px;
-               cursor: pointer;
-               display: flex;
-               align-items: center;
-               justify-content: center;
-               transition: all 0.3s ease;"
-    >
-        <img 
-            src="https://cdn-icons-png.flaticon.com/128/9903/9903638.png" 
-            alt="Search"
-            style="width: 22px; height: 22px; filter: brightness(0) invert(1);"
-        >
-    </button>
-</div>
 <br>
 <button data-action="hearts">Liked Videos
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="${isD ? "#ccc" : "#444"}" viewBox="0 0 16 16">

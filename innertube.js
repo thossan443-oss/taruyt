@@ -1,6 +1,6 @@
 /*****YTPRO & YTRU DOWN INTEGRATED*******
 Author: Prateek Chaubey & Tarek Hossain
-Version: 4.0.0 (Integrated Edition)
+Version: 4.1.0 (Sheet Dialog Edition)
 Last Updated On: 2026
 */
 
@@ -23,7 +23,7 @@ window.ytproSabrDownload = async function() {
   let itemCounter = 0;
   window.DOWNLOAD_METADATA_STORE = {};
 
-  // Get Video ID from Current Tab/URL Context natively inside YouTube
+  // Get Current Video ID from YouTube Context
   let currentVideoId = "";
   if (window.location.pathname.indexOf("shorts") > -1) {
     currentVideoId = window.location.pathname.substr(8, window.location.pathname.length);
@@ -31,34 +31,36 @@ window.ytproSabrDownload = async function() {
     currentVideoId = new URLSearchParams(window.location.search).get("v");
   }
 
-  // ─── INJECT YTRU DOWN FULL SCREEN UI ───
-  // Remove any existing instances to avoid duplicates
-  const existingUI = document.getElementById('ytru-down-root');
-  if (existingUI) existingUI.remove();
-
-  const uiContainer = document.createElement('div');
-  uiContainer.id = 'ytru-down-root';
-  Object.assign(uiContainer.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100vw',
-    height: '100vh',
-    zIndex: '999999',
-    backgroundColor: '#030712',
-    color: '#f3f4f6',
-    overflow: 'hidden',
-    fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
-  });
-
-  // Inject Tailwind, FontAwesome and Fonts dynamically into YouTube document head
+  // Inject Dependencies (Tailwind, FontAwesome, Fonts) into Head if not present
   if (!document.getElementById('ytru-tailwind')) {
     const tw = document.createElement('script'); tw.id = 'ytru-tailwind'; tw.src = 'https://cdn.tailwindcss.com'; document.head.appendChild(tw);
     const fa = document.createElement('link'); fa.id = 'ytru-fa'; fa.rel = 'stylesheet'; fa.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'; document.head.appendChild(fa);
     const font = document.createElement('link'); font.id = 'ytru-font'; font.rel = 'stylesheet'; font.href = 'https://cdn.jsdelivr.net/npm/@fontsource/inter/400.css'; document.head.appendChild(font);
   }
 
-  // Inject Custom Styles
+  // Remove existing sheet container to avoid layering bugs
+  const existingSheet = document.getElementById('ytpro-sabr-sheet-container');
+  if (existingSheet) existingSheet.remove();
+
+  // ─── CREATE INNERTUBE BOTTOM SHEET DIALOG ───
+  const sheetContainer = document.createElement('div');
+  sheetContainer.id = 'ytpro-sabr-sheet-container';
+  Object.assign(sheetContainer.style, {
+    position: 'fixed',
+    bottom: '0',
+    left: '0',
+    width: '100vw',
+    height: '100vh',
+    zIndex: '999999',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
+  });
+
+  // Custom Styles Injection
   const styleTag = document.createElement('style');
   styleTag.innerHTML = `
     @keyframes shimmerAnim { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
@@ -67,122 +69,111 @@ window.ytproSabrDownload = async function() {
     .dropdown-menu { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: top right; }
     .dropdown-menu.hidden { transform: scale(0.95); opacity: 0; pointer-events: none; visibility: hidden; }
     .dropdown-menu.visible { transform: scale(1); opacity: 1; pointer-events: auto; visibility: visible; }
-    .sheet { transition: transform 0.3s ease-out, opacity 0.3s ease-out; }
-    .sheet.closed { transform: translateY(100%); opacity: 0; pointer-events: none; }
-    .sheet.open { transform: translateY(0); opacity: 1; pointer-events: auto; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .glass-panel { background: rgba(17, 24, 39, 0.85); backdrop-filter: blur(12px); }
     .fade-scroll-mask {
       -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
       mask-image: linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
     }
   `;
-  uiContainer.appendChild(styleTag);
+  sheetContainer.appendChild(styleTag);
 
-  // Layout Setup inside core architecture
-  uiContainer.innerHTML += `
-    <div id="toastContainer" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-[100000] flex flex-col gap-2 pointer-events-none w-11/12 max-w-sm"></div>
+  // Sheet Inner Content HTML Structure (No Headers/Footers on Outer Frame)
+  sheetContainer.innerHTML += `
+    <div id="toastContainer" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100000] flex flex-col gap-2 pointer-events-none w-11/12 max-w-sm"></div>
 
-    <header class="absolute top-0 left-0 right-0 h-14 glass-panel border-b border-gray-800 flex items-center justify-between px-4 z-50">
-      <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-        <i class="fa-solid fa-cloud-arrow-down text-blue-500"></i> YTRU DOWN
-      </h1>
-      <div class="flex items-center gap-1">
-        <button id="closeYtruUiBtn" class="p-2 rounded-full hover:bg-gray-800 text-gray-400 mr-1"><i class="fa-solid fa-arrow-left"></i></button>
-        <button id="settingsBtn" class="p-2 rounded-full hover:bg-gray-800 transition-colors">
-          <i class="fa-solid fa-gear text-gray-400 text-sm"></i>
+    <div class="w-full max-w-lg bg-gray-950 border-t border-gray-800 rounded-t-2xl p-4 space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar relative shadow-2xl">
+      
+      <div class="flex items-center justify-between border-b border-gray-900 pb-2">
+        <button id="closeSheetBtn" class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-900 px-2.5 py-1.5 rounded-lg border border-gray-800 transition-colors">
+          <i class="fa-solid fa-arrow-down-long"></i> Close
+        </button>
+        <h3 class="text-sm font-bold tracking-wide text-gray-300 uppercase flex items-center gap-1.5"><i class="fa-solid fa-cloud-arrow-down text-blue-500"></i> YTRU DOWN</h3>
+        <button id="settingsBtn" class="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 transition-colors text-gray-400 hover:text-white">
+          <i class="fa-solid fa-gear text-sm"></i>
         </button>
       </div>
-    </header>
 
-    <section id="inputSection" class="absolute top-14 left-0 right-0 glass-panel border-b border-gray-800 p-3 z-40">
-      <div class="max-w-3xl mx-auto space-y-2">
+      <div class="space-y-2">
         <div class="flex gap-2">
-          <input id="urlInput" type="text" placeholder="Paste video link or ID..." class="flex-1 bg-gray-800/80 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all">
-          <button id="pasteBtn" class="bg-gray-700/80 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm transition-colors border border-gray-600">
+          <input id="urlInput" type="text" placeholder="Paste video link or ID..." class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 text-sm text-gray-200 placeholder-gray-600 focus:border-blue-500 transition-all">
+          <button id="pasteBtn" class="bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white px-3 py-2 rounded-xl text-sm transition-colors border border-gray-800">
             <i class="fa-solid fa-clipboard"></i>
           </button>
         </div>
         <div class="flex gap-2">
           <div class="relative flex-1">
-            <button id="formatTrigger" class="w-full flex items-center justify-between bg-gray-800/80 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-300 hover:border-gray-600 transition-colors">
+            <button id="formatTrigger" class="w-full flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 text-sm text-gray-300 hover:border-gray-700 transition-colors">
               <span id="selectedFormatLabel">MP4 (720p)</span>
               <i class="fa-solid fa-chevron-down text-xs ml-2 opacity-60"></i>
             </button>
-            <div id="formatDropdown" class="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl overflow-hidden dropdown-menu hidden z-50 max-h-60 overflow-y-auto"></div>
+            <div id="formatDropdown" class="absolute bottom-full left-0 right-0 mb-2 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl overflow-hidden dropdown-menu hidden z-[1000] max-h-48 overflow-y-auto hide-scrollbar"></div>
           </div>
-          <button id="processBtn" disabled class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700/50 disabled:text-gray-500 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-500/20">
+          <button id="processBtn" disabled class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent disabled:cursor-not-allowed px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border border-blue-500/20 shadow-lg shadow-blue-500/10">
             <i class="fa-solid fa-bolt-lightning"></i> PROCESS
           </button>
         </div>
       </div>
-    </section>
 
-    <main id="queueList" class="h-full overflow-y-auto hide-scrollbar pt-[195px] pb-20 px-4 space-y-3 fade-scroll-mask scroll-smooth">
-      <div id="emptyState" class="flex flex-col items-center justify-center h-64 text-gray-500 text-sm select-none">
-        <i class="fa-solid fa-layer-group text-5xl mb-3 opacity-20"></i>
-        <p>No downloads in queue</p>
-        <p class="text-xs text-gray-600 mt-1">Paste a YouTube link to start</p>
+      <div id="queueList" class="space-y-3 max-h-64 overflow-y-auto hide-scrollbar fade-scroll-mask pt-1 pb-2">
+        <div id="emptyState" class="flex flex-col items-center justify-center py-8 text-gray-600 text-xs select-none">
+          <i class="fa-solid fa-layer-group text-3xl mb-2 opacity-30"></i>
+          <p>No active conversions in dialog queue</p>
+        </div>
       </div>
-    </main>
 
-    <footer class="absolute bottom-0 left-0 right-0 h-12 glass-panel border-t border-gray-800 flex items-center justify-center z-50">
-      <p class="text-xs text-gray-500">© 2026 YTRU DOWN. Made With <i class="fa-solid fa-heart text-red-500 mx-0.5"></i> By <a href="https://iamtarek.is-a.dev" target="_blank" class="text-blue-400 hover:text-blue-300 underline font-semibold tracking-wider">TAREK HOSSAIN</a></p>
-    </footer>
+    </div>
 
-    <div id="settingsOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] hidden transition-opacity opacity-0"></div>
-    <div id="settingsSheet" class="fixed bottom-0 left-0 right-0 sm:left-1/2 sm:right-auto sm:bottom-6 sm:w-full sm:max-w-md bg-gray-900 border-t sm:border sm:border-gray-700/50 rounded-t-2xl sm:rounded-2xl p-5 z-[70] sheet closed shadow-2xl max-h-[85vh] overflow-y-auto hide-scrollbar">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-white">Configuration</h2>
-        <button id="closeSettings" class="p-2 rounded-full hover:bg-gray-800 transition-colors"><i class="fa-solid fa-xmark text-gray-400"></i></button>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-gray-400 mb-1.5">API Key Endpoint</label>
-          <div class="flex gap-2">
-            <input id="apiKeyInput" type="text" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-blue-500">
-            <button id="resetApiBtn" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-xs text-gray-300 border border-gray-600">Reset</button>
-          </div>
+    <div id="settingsOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000] hidden transition-opacity opacity-0 flex items-end justify-center">
+      <div id="settingsSheet" class="w-full max-w-md bg-gray-900 border-t border-gray-800 rounded-t-2xl p-5 space-y-4 shadow-2xl max-h-[80vh] overflow-y-auto hide-scrollbar">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+          <h2 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-sliders text-blue-500"></i> Configuration</h2>
+          <button id="closeSettings" class="p-1.5 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
         </div>
-        
-        <div>
-          <label class="block text-xs font-medium text-gray-400 mb-1.5">CORS Proxy URL</label>
-          <input id="proxyInput" type="text" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-blue-500" placeholder="https://api.codetabs.com/v1/proxy?quest=">
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-gray-400 mb-2">Default Format Type Priority</label>
-          <div class="grid grid-cols-2 gap-3">
-            <label class="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg p-2.5 cursor-pointer hover:border-gray-600 select-none">
-              <input type="radio" name="formatPriority" value="video" id="priorityVideo" class="accent-blue-500 h-4 w-4">
-              <span class="text-xs text-gray-300 font-medium">Video Priority</span>
-            </label>
-            <label class="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg p-2.5 cursor-pointer hover:border-gray-600 select-none">
-              <input type="radio" name="formatPriority" value="audio" id="priorityAudio" class="accent-blue-500 h-4 w-4">
-              <span class="text-xs text-gray-300 font-medium">Audio Priority</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-4">
           <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1.5">Default Video Quality</label>
-            <select id="defaultVideoSelect" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:border-blue-500"></select>
+            <label class="block text-[11px] font-semibold text-gray-400 mb-1">API Key Endpoint</label>
+            <div class="flex gap-2">
+              <input id="apiKeyInput" type="text" class="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:border-blue-500">
+              <button id="resetApiBtn" class="bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-xl text-xs text-gray-300 border border-gray-700">Reset</button>
+            </div>
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1.5">Default Audio Format</label>
-            <select id="defaultAudioSelect" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:border-blue-500"></select>
+            <label class="block text-[11px] font-semibold text-gray-400 mb-1">CORS Proxy URL</label>
+            <input id="proxyInput" type="text" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:border-blue-500" placeholder="https://api.codetabs.com/v1/proxy?quest=">
           </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-gray-400 mb-2">Default Format Type Priority</label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="flex items-center gap-2 bg-gray-950 border border-gray-800 rounded-xl p-2.5 cursor-pointer hover:border-gray-700 select-none">
+                <input type="radio" name="formatPriority" value="video" id="priorityVideo" class="accent-blue-500 h-4 w-4">
+                <span class="text-xs text-gray-300 font-medium">Video Priority</span>
+              </label>
+              <label class="flex items-center gap-2 bg-gray-950 border border-gray-800 rounded-xl p-2.5 cursor-pointer hover:border-gray-700 select-none">
+                <input type="radio" name="formatPriority" value="audio" id="priorityAudio" class="accent-blue-500 h-4 w-4">
+                <span class="text-xs text-gray-300 font-medium">Audio Priority</span>
+              </label>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-400 mb-1">Default Video Quality</label>
+              <select id="defaultVideoSelect" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 focus:border-blue-500"></select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-400 mb-1">Default Audio Format</label>
+              <select id="defaultAudioSelect" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 focus:border-blue-500"></select>
+            </div>
+          </div>
+          <button id="saveSettings" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20 mt-1">Save & Apply</button>
         </div>
-        <button id="saveSettings" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-500/20 mt-1">Save & Apply</button>
       </div>
     </div>
   `;
-  
-  document.body.appendChild(uiContainer);
 
-  // References
+  document.body.appendChild(sheetContainer);
+
+  // Core References Hooks
   const urlInput = document.getElementById('urlInput');
   const pasteBtn = document.getElementById('pasteBtn');
   const formatTrigger = document.getElementById('formatTrigger');
@@ -193,7 +184,6 @@ window.ytproSabrDownload = async function() {
   const emptyState = document.getElementById('emptyState');
   const settingsBtn = document.getElementById('settingsBtn');
   const settingsOverlay = document.getElementById('settingsOverlay');
-  const settingsSheet = document.getElementById('settingsSheet');
   const closeSettings = document.getElementById('closeSettings');
   const apiKeyInput = document.getElementById('apiKeyInput');
   const proxyInput = document.getElementById('proxyInput');
@@ -204,14 +194,14 @@ window.ytproSabrDownload = async function() {
   const toastContainer = document.getElementById('toastContainer');
   const priorityVideo = document.getElementById('priorityVideo');
   const priorityAudio = document.getElementById('priorityAudio');
-  const closeYtruUiBtn = document.getElementById('closeYtruUiBtn');
+  const closeSheetBtn = document.getElementById('closeSheetBtn');
 
-  // Pre-fill active text input with URL context inside YouTube dynamically if available
+  // Load contextual video URL stream into input box seamlessly if discovered inside YT scope
   if (currentVideoId) {
     urlInput.value = `https://www.youtube.com/watch?v=${currentVideoId}`;
   }
 
-  // Toast Functionality
+  // Toast Alerts Setup
   function showToast(message, isError = true) {
     const toast = document.createElement('div');
     toast.className = `flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-xs font-medium border transition-all duration-300 opacity-0 translate-y-2 pointer-events-auto ${
@@ -226,6 +216,7 @@ window.ytproSabrDownload = async function() {
     }, 3500);
   }
 
+  // Pure Client Anchor Direct Download Pipe Engine Integration
   function triggerDirectDownload(downloadUrl) {
     if (downloadUrl && downloadUrl !== '#') {
       const link = document.createElement('a');
@@ -244,11 +235,11 @@ window.ytproSabrDownload = async function() {
   function populateDropdowns() {
     let mainHTML = '';
     Object.entries(VIDEO_FORMATS).forEach(([k, v]) => {
-      mainHTML += `<div class="px-4 py-2.5 hover:bg-gray-700/80 cursor-pointer text-sm flex justify-between items-center format-opt" data-type="video" data-val="${k}"><span>${v}</span><i class="fa-solid fa-video text-gray-500 text-xs"></i></div>`;
+      mainHTML += `<div class="px-4 py-2 hover:bg-gray-800 cursor-pointer text-xs flex justify-between items-center format-opt" data-type="video" data-val="${k}"><span>${v}</span><i class="fa-solid fa-video text-gray-600 text-[10px]"></i></div>`;
     });
-    mainHTML += '<div class="border-t border-gray-700/50 my-1"></div>';
+    mainHTML += '<div class="border-t border-gray-800 my-1"></div>';
     AUDIO_FORMATS.forEach(k => {
-      mainHTML += `<div class="px-4 py-2.5 hover:bg-gray-700/80 cursor-pointer text-sm flex justify-between items-center format-opt" data-type="audio" data-val="${k}"><span>Audio (${k.toUpperCase()})</span><i class="fa-solid fa-music text-gray-500 text-xs"></i></div>`;
+      mainHTML += `<div class="px-4 py-2 hover:bg-gray-800 cursor-pointer text-xs flex justify-between items-center format-opt" data-type="audio" data-val="${k}"><span>Audio (${k.toUpperCase()})</span><i class="fa-solid fa-music text-gray-600 text-[10px]"></i></div>`;
     });
     formatDropdown.innerHTML = mainHTML;
 
@@ -293,7 +284,7 @@ window.ytproSabrDownload = async function() {
     }
   }
 
-  // Setup Interaction Hooks
+  // Listeners Hooks
   pasteBtn.addEventListener('click', async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -334,10 +325,19 @@ window.ytproSabrDownload = async function() {
     }
   });
 
-  closeYtruUiBtn.addEventListener('click', () => uiContainer.remove());
-  settingsBtn.addEventListener('click', openSheet);
-  closeSettings.addEventListener('click', closeSheet);
-  settingsOverlay.addEventListener('click', closeSheet);
+  closeSheetBtn.addEventListener('click', () => sheetContainer.remove());
+  
+  // Settings Overlay Sub-Sheet System Handlers
+  settingsBtn.addEventListener('click', () => {
+    settingsOverlay.classList.remove('hidden');
+    requestAnimationFrame(() => settingsOverlay.classList.remove('opacity-0'));
+  });
+
+  const closeSettingsSheet = () => {
+    settingsOverlay.classList.add('opacity-0');
+    setTimeout(() => settingsOverlay.classList.add('hidden'), 200);
+  };
+  closeSettings.addEventListener('click', closeSettingsSheet);
 
   resetApiBtn.addEventListener('click', () => {
     CONFIG.apiKey = 'dfcb6d76f2f6a9894gjkege8a4ab232222';
@@ -369,27 +369,11 @@ window.ytproSabrDownload = async function() {
     localStorage.setItem('yt_active_type', CONFIG.activeType);
     CONFIG.selectedVal = CONFIG.activeType === 'video' ? CONFIG.defaultVideo : CONFIG.defaultAudio;
     updateFormatDisplay();
-    closeSheet();
+    closeSettingsSheet();
     showToast("Settings saved successfully!", false);
   });
 
-  function openSheet() {
-    settingsOverlay.classList.remove('hidden');
-    requestAnimationFrame(() => {
-      settingsOverlay.classList.remove('opacity-0');
-      settingsSheet.classList.remove('closed');
-      settingsSheet.classList.add('open');
-    });
-  }
-
-  function closeSheet() {
-    settingsOverlay.classList.add('opacity-0');
-    settingsSheet.classList.remove('open');
-    settingsSheet.classList.add('closed');
-    setTimeout(() => settingsOverlay.classList.add('hidden'), 300);
-  }
-
-  // ─── AJAX PROGRESS DATA FETCH LOOP ENGINE ───
+  // ─── GATEWAY AJAX PROCESS CONTROLLER ───
   async function handleProcess() {
     const match = urlInput.value.match(YT_REGEX);
     if (!match) {
@@ -438,25 +422,25 @@ window.ytproSabrDownload = async function() {
     
     const el = document.createElement('div');
     el.id = itemId;
-    el.className = 'bg-gray-900/60 border border-gray-800 rounded-xl p-3 flex gap-3 items-center backdrop-blur-sm relative transition-all duration-300 hover:border-gray-700/60';
+    el.className = 'bg-gray-900 border border-gray-800 rounded-xl p-2.5 flex gap-3 items-center transition-all duration-300';
     el.innerHTML = `
-      <div class="w-24 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-800 shimmer-box relative shadow-inner" id="${itemId}-thumb">
+      <div class="w-20 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-800 shimmer-box relative shadow-inner" id="${itemId}-thumb">
         <img src="${thumbUrl}" class="w-full h-full object-cover hidden relative z-10" alt="thumb" id="${itemId}-img" onload="this.classList.remove('hidden'); document.getElementById('${itemId}-thumb').classList.remove('shimmer-box');">
       </div>
       <div class="flex-1 min-w-0 flex flex-col justify-center">
-        <div class="h-4 w-11/12 rounded shimmer-box mb-2" id="${itemId}-ttl-sh"></div>
+        <div class="h-3.5 w-11/12 rounded shimmer-box mb-1.5" id="${itemId}-ttl-sh"></div>
         <div class="flex items-center gap-2 mb-1" id="${itemId}-combo-row">
-          <span class="bg-blue-600/20 border border-blue-500/20 text-blue-400 font-bold text-[9px] px-2 py-0.5 rounded tracking-wider uppercase">${formatLabel}</span>
-          <button onclick="document.getElementById('${itemId}').remove();" class="text-gray-500 hover:text-red-400 transition-colors p-1">
-            <i class="fa-solid fa-trash-can text-[10px]"></i>
+          <span class="bg-blue-600/20 border border-blue-500/20 text-blue-400 font-bold text-[8px] px-1.5 py-0.5 rounded tracking-wider uppercase">${formatLabel}</span>
+          <button onclick="document.getElementById('${itemId}').remove();" class="text-gray-500 hover:text-red-400 transition-colors p-0.5">
+            <i class="fa-solid fa-trash-can text-[9px]"></i>
           </button>
         </div>
-        <div class="w-full bg-gray-800 rounded-full h-1.5 mt-1 overflow-hidden" id="${itemId}-bar-frame">
-          <div class="bg-blue-500 h-1.5 rounded-full progress-transition w-0" id="${itemId}-bar"></div>
+        <div class="w-full bg-gray-800 rounded-full h-1 mt-1 overflow-hidden" id="${itemId}-bar-frame">
+          <div class="bg-blue-500 h-1 rounded-full progress-transition w-0" id="${itemId}-bar"></div>
         </div>
         <div class="flex justify-between items-center mt-1" id="${itemId}-stat-frame">
-          <span class="text-[10px] text-gray-400 font-medium tracking-wide uppercase" id="${itemId}-stat">INITIALIZING...</span>
-          <span class="text-[10px] font-mono text-blue-400 font-semibold" id="${itemId}-pct">0%</span>
+          <span class="text-[9px] text-gray-400 font-medium tracking-wide uppercase" id="${itemId}-stat">INITIALIZING...</span>
+          <span class="text-[9px] font-mono text-blue-400 font-semibold" id="${itemId}-pct">0%</span>
         </div>
       </div>
     `;
@@ -499,7 +483,7 @@ window.ytproSabrDownload = async function() {
     if (!item || !metadata) return;
 
     const tSh = document.getElementById(`${itemId}-ttl-sh`);
-    if(tSh) { tSh.outerHTML = `<p class="text-xs font-semibold text-gray-100 truncate mb-1 pr-1" title="${metadata.title}">${metadata.title}</p>`; }
+    if(tSh) { tSh.outerHTML = `<p class="text-xs font-semibold text-gray-200 truncate mb-1 pr-1" title="${metadata.title}">${metadata.title}</p>`; }
 
     const barFrame = document.getElementById(`${itemId}-bar-frame`);
     const statFrame = document.getElementById(`${itemId}-stat-frame`);
@@ -513,7 +497,7 @@ window.ytproSabrDownload = async function() {
     if(!exactUrl) exactUrl = "#";
 
     const dBtn = document.createElement('button');
-    dBtn.className = 'w-full bg-green-600 hover:bg-green-500 text-white text-[11px] font-bold py-1.5 rounded-lg transition-all shadow-lg shadow-green-500/20 mt-1 flex items-center justify-center gap-2';
+    dBtn.className = 'w-full bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold py-1.5 rounded-lg transition-all shadow-lg shadow-green-500/20 mt-1 flex items-center justify-center gap-1.5';
     dBtn.innerHTML = '<i class="fa-solid fa-download"></i> DOWNLOAD READY';
     dBtn.onclick = (e) => {
       e.preventDefault();
@@ -526,7 +510,7 @@ window.ytproSabrDownload = async function() {
 
   processBtn.addEventListener('click', handleProcess);
 
-  // Initialize UI setups
+  // Initialize
   populateDropdowns();
   updateFormatDisplay();
   applyUIState();

@@ -1,6 +1,6 @@
 /*****YTPRO & YTRU DOWN INTEGRATED*******
 Author: Prateek Chaubey & Tarek Hossain
-Version: 4.1.0 (Sheet Dialog Edition)
+Version: 4.2.0 (Auto-Process Sheet Edition)
 Last Updated On: 2026
 */
 
@@ -38,12 +38,17 @@ window.ytproSabrDownload = async function() {
     const font = document.createElement('link'); font.id = 'ytru-font'; font.rel = 'stylesheet'; font.href = 'https://cdn.jsdelivr.net/npm/@fontsource/inter/400.css'; document.head.appendChild(font);
   }
 
-  // Remove existing sheet container to avoid layering bugs
-  const existingSheet = document.getElementById('ytpro-sabr-sheet-container');
-  if (existingSheet) existingSheet.remove();
+  // Handle Dynamic Re-opening safely without removing layout states
+  let sheetContainer = document.getElementById('ytpro-sabr-sheet-container');
+  if (sheetContainer) {
+    sheetContainer.style.display = 'flex';
+    // Trigger Auto Process on re-open with current context
+    setTimeout(() => { triggerAutoProcess(); }, 300);
+    return;
+  }
 
-  // ─── CREATE INNERTUBE BOTTOM SHEET DIALOG ───
-  const sheetContainer = document.createElement('div');
+  // ─── CREATE INNERTUBE BOTTOM SHEET DIALOG (FULL WIDTH & EXPANDED HEIGHT) ───
+  sheetContainer = document.createElement('div');
   sheetContainer.id = 'ytpro-sabr-sheet-container';
   Object.assign(sheetContainer.style, {
     position: 'fixed',
@@ -52,8 +57,8 @@ window.ytproSabrDownload = async function() {
     width: '100vw',
     height: '100vh',
     zIndex: '999999',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    backdropFilter: 'blur(4px)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    backdropFilter: 'blur(6px)',
     display: 'flex',
     alignItems: 'flex-end',
     justifyContent: 'center',
@@ -66,7 +71,7 @@ window.ytproSabrDownload = async function() {
     @keyframes shimmerAnim { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     .shimmer-box { background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%); background-size: 200% 100%; animation: shimmerAnim 1.5s infinite; border-radius: 0.5rem; }
     .progress-transition { transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-    .dropdown-menu { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: top right; }
+    .dropdown-menu { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: bottom center; }
     .dropdown-menu.hidden { transform: scale(0.95); opacity: 0; pointer-events: none; visibility: hidden; }
     .dropdown-menu.visible { transform: scale(1); opacity: 1; pointer-events: auto; visibility: visible; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -78,54 +83,50 @@ window.ytproSabrDownload = async function() {
   `;
   sheetContainer.appendChild(styleTag);
 
-  // Sheet Inner Content HTML Structure (No Headers/Footers on Outer Frame)
+  // Sheet Inner Content HTML Structure (Full Width & Expanded Height Area)
   sheetContainer.innerHTML += `
-    <div id="toastContainer" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100000] flex flex-col gap-2 pointer-events-none w-11/12 max-w-sm"></div>
+    <div id="toastContainer" class="fixed bottom-28 left-1/2 -translate-x-1/2 z-[100000] flex flex-col gap-2 pointer-events-none w-11/12 max-w-sm"></div>
 
-    <div class="w-full max-w-lg bg-gray-950 border-t border-gray-800 rounded-t-2xl p-4 space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar relative shadow-2xl">
+    <div class="w-full bg-gray-950 border-t border-gray-800 rounded-t-3xl p-5 space-y-4 max-h-[90vh] overflow-y-auto hide-scrollbar relative shadow-2xl flex flex-col justify-between">
       
-      <div class="flex items-center justify-between border-b border-gray-900 pb-2">
-        <button id="closeSheetBtn" class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-900 px-2.5 py-1.5 rounded-lg border border-gray-800 transition-colors">
-          <i class="fa-solid fa-arrow-down-long"></i> Close
-        </button>
-        <h3 class="text-sm font-bold tracking-wide text-gray-300 uppercase flex items-center gap-1.5"><i class="fa-solid fa-cloud-arrow-down text-blue-500"></i> YTRU DOWN</h3>
-        <button id="settingsBtn" class="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 transition-colors text-gray-400 hover:text-white">
-          <i class="fa-solid fa-gear text-sm"></i>
-        </button>
-      </div>
-
-      <div class="space-y-2">
-        <div class="flex gap-2">
-          <input id="urlInput" type="text" placeholder="Paste video link or ID..." class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 text-sm text-gray-200 placeholder-gray-600 focus:border-blue-500 transition-all">
-          <button id="pasteBtn" class="bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white px-3 py-2 rounded-xl text-sm transition-colors border border-gray-800">
-            <i class="fa-solid fa-clipboard"></i>
+      <div>
+        <div class="flex items-center justify-between border-b border-gray-900 pb-3 mb-2">
+          <button id="closeSheetBtn" class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-900 px-3 py-2 rounded-xl border border-gray-800 transition-colors">
+            <i class="fa-solid fa-arrow-down-long"></i> Close
+          </button>
+          <h3 class="text-sm font-bold tracking-wide text-gray-300 uppercase flex items-center gap-1.5"><i class="fa-solid fa-cloud-arrow-down text-blue-500"></i> YTRU DOWN</h3>
+          <button id="settingsBtn" class="p-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 border border-gray-800 transition-colors text-gray-400 hover:text-white">
+            <i class="fa-solid fa-gear text-sm"></i>
           </button>
         </div>
-        <div class="flex gap-2">
-          <div class="relative flex-1">
-            <button id="formatTrigger" class="w-full flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 text-sm text-gray-300 hover:border-gray-700 transition-colors">
-              <span id="selectedFormatLabel">MP4 (720p)</span>
+
+        <input id="urlInput" type="hidden">
+
+        <div class="space-y-2">
+          <div class="relative w-full">
+            <button id="formatTrigger" class="w-full flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-300 hover:border-gray-700 transition-colors">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-compact-disc text-blue-500 animate-spin" style="animation-duration: 4s;"></i>
+                <span id="selectedFormatLabel">Select Format / Quality</span>
+              </span>
               <i class="fa-solid fa-chevron-down text-xs ml-2 opacity-60"></i>
             </button>
-            <div id="formatDropdown" class="absolute bottom-full left-0 right-0 mb-2 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl overflow-hidden dropdown-menu hidden z-[1000] max-h-48 overflow-y-auto hide-scrollbar"></div>
+            <div id="formatDropdown" class="absolute bottom-full left-0 right-0 mb-2 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl overflow-hidden dropdown-menu hidden z-[1000] max-h-56 overflow-y-auto hide-scrollbar"></div>
           </div>
-          <button id="processBtn" disabled class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-900 disabled:text-gray-600 disabled:border-transparent disabled:cursor-not-allowed px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border border-blue-500/20 shadow-lg shadow-blue-500/10">
-            <i class="fa-solid fa-bolt-lightning"></i> PROCESS
-          </button>
         </div>
-      </div>
 
-      <div id="queueList" class="space-y-3 max-h-64 overflow-y-auto hide-scrollbar fade-scroll-mask pt-1 pb-2">
-        <div id="emptyState" class="flex flex-col items-center justify-center py-8 text-gray-600 text-xs select-none">
-          <i class="fa-solid fa-layer-group text-3xl mb-2 opacity-30"></i>
-          <p>No active conversions in dialog queue</p>
+        <div id="queueList" class="space-y-3 max-h-[50vh] overflow-y-auto hide-scrollbar fade-scroll-mask pt-3 pb-2">
+          <div id="emptyState" class="flex flex-col items-center justify-center py-16 text-gray-600 text-xs select-none">
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-3 text-blue-500"></i>
+            <p>Fetching download links automatically...</p>
+          </div>
         </div>
       </div>
 
     </div>
 
     <div id="settingsOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000] hidden transition-opacity opacity-0 flex items-end justify-center">
-      <div id="settingsSheet" class="w-full max-w-md bg-gray-900 border-t border-gray-800 rounded-t-2xl p-5 space-y-4 shadow-2xl max-h-[80vh] overflow-y-auto hide-scrollbar">
+      <div id="settingsSheet" class="w-full bg-gray-900 border-t border-gray-800 rounded-t-3xl p-5 space-y-4 shadow-2xl max-h-[80vh] overflow-y-auto hide-scrollbar">
         <div class="flex items-center justify-between border-b border-gray-800 pb-2">
           <h2 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-sliders text-blue-500"></i> Configuration</h2>
           <button id="closeSettings" class="p-1.5 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
@@ -175,11 +176,9 @@ window.ytproSabrDownload = async function() {
 
   // Core References Hooks
   const urlInput = document.getElementById('urlInput');
-  const pasteBtn = document.getElementById('pasteBtn');
   const formatTrigger = document.getElementById('formatTrigger');
   const formatDropdown = document.getElementById('formatDropdown');
   const selectedFormatLabel = document.getElementById('selectedFormatLabel');
-  const processBtn = document.getElementById('processBtn');
   const queueList = document.getElementById('queueList');
   const emptyState = document.getElementById('emptyState');
   const settingsBtn = document.getElementById('settingsBtn');
@@ -196,7 +195,7 @@ window.ytproSabrDownload = async function() {
   const priorityAudio = document.getElementById('priorityAudio');
   const closeSheetBtn = document.getElementById('closeSheetBtn');
 
-  // Load contextual video URL stream into input box seamlessly if discovered inside YT scope
+  // Silently load current YouTube context URL into hidden element
   if (currentVideoId) {
     urlInput.value = `https://www.youtube.com/watch?v=${currentVideoId}`;
   }
@@ -216,17 +215,24 @@ window.ytproSabrDownload = async function() {
     }, 3500);
   }
 
-  // Pure Client Anchor Direct Download Pipe Engine Integration
+  // Deep-linked Native Download Trigger Fix (Bypasses Sandbox Blocks)
   function triggerDirectDownload(downloadUrl) {
     if (downloadUrl && downloadUrl !== '#') {
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = '';
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => document.body.removeChild(link), 100);
       showToast("Download started!", false);
+      
+      // Method A: Direct pop window hook
+      const win = window.open(downloadUrl, '_blank');
+      if (!win || win.closed || typeof win.closed == 'undefined') {
+        // Method B: Hidden global download iframe fallback if popup blocker intercepts
+        let dlFrame = document.getElementById('ytru-download-frame');
+        if (!dlFrame) {
+          dlFrame = document.createElement('iframe');
+          dlFrame.id = 'ytru-download-frame';
+          dlFrame.style.display = 'none';
+          document.body.appendChild(dlFrame);
+        }
+        dlFrame.src = downloadUrl;
+      }
     } else {
       showToast("Download link unavailable", true);
     }
@@ -235,11 +241,11 @@ window.ytproSabrDownload = async function() {
   function populateDropdowns() {
     let mainHTML = '';
     Object.entries(VIDEO_FORMATS).forEach(([k, v]) => {
-      mainHTML += `<div class="px-4 py-2 hover:bg-gray-800 cursor-pointer text-xs flex justify-between items-center format-opt" data-type="video" data-val="${k}"><span>${v}</span><i class="fa-solid fa-video text-gray-600 text-[10px]"></i></div>`;
+      mainHTML += `<div class="px-4 py-2.5 hover:bg-gray-800 cursor-pointer text-xs flex justify-between items-center format-opt" data-type="video" data-val="${k}"><span>${v}</span><i class="fa-solid fa-video text-gray-600 text-[10px]"></i></div>`;
     });
     mainHTML += '<div class="border-t border-gray-800 my-1"></div>';
     AUDIO_FORMATS.forEach(k => {
-      mainHTML += `<div class="px-4 py-2 hover:bg-gray-800 cursor-pointer text-xs flex justify-between items-center format-opt" data-type="audio" data-val="${k}"><span>Audio (${k.toUpperCase()})</span><i class="fa-solid fa-music text-gray-600 text-[10px]"></i></div>`;
+      mainHTML += `<div class="px-4 py-2.5 hover:bg-gray-800 cursor-pointer text-xs flex justify-between items-center format-opt" data-type="audio" data-val="${k}"><span>Audio (${k.toUpperCase()})</span><i class="fa-solid fa-music text-gray-600 text-[10px]"></i></div>`;
     });
     formatDropdown.innerHTML = mainHTML;
 
@@ -269,33 +275,7 @@ window.ytproSabrDownload = async function() {
     }
   }
 
-  function validate(showToastAlert = false) {
-    const inputVal = urlInput.value.trim();
-    if (inputVal === "") {
-      processBtn.disabled = true;
-      processBtn.style.opacity = '0.5';
-      return;
-    }
-    const valid = YT_REGEX.test(inputVal);
-    processBtn.disabled = !valid;
-    processBtn.style.opacity = valid ? '1' : '0.5';
-    if (!valid && showToastAlert) {
-      showToast("Invalid Input! Only YouTube URL or 11-char Video ID allowed.");
-    }
-  }
-
-  // Listeners Hooks
-  pasteBtn.addEventListener('click', async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      urlInput.value = text;
-      validate(true);
-    } catch {
-      showToast("Clipboard access denied. Please paste manually.");
-    }
-  });
-
-  urlInput.addEventListener('input', () => validate(false));
+  // UI Event Bindings
   formatTrigger.addEventListener('click', (e) => {
     e.stopPropagation();
     if (formatDropdown.classList.contains('hidden')) {
@@ -315,6 +295,9 @@ window.ytproSabrDownload = async function() {
       updateFormatDisplay();
       formatDropdown.classList.add('hidden');
       formatDropdown.classList.remove('visible');
+      
+      // Auto trigger conversion loop on quality switch instantly
+      triggerAutoProcess();
     }
   });
 
@@ -325,9 +308,11 @@ window.ytproSabrDownload = async function() {
     }
   });
 
-  closeSheetBtn.addEventListener('click', () => sheetContainer.remove());
+  // Soft-close system instead of completely wiping layout instances from DOM
+  closeSheetBtn.addEventListener('click', () => {
+    sheetContainer.style.display = 'none';
+  });
   
-  // Settings Overlay Sub-Sheet System Handlers
   settingsBtn.addEventListener('click', () => {
     settingsOverlay.classList.remove('hidden');
     requestAnimationFrame(() => settingsOverlay.classList.remove('opacity-0'));
@@ -371,21 +356,27 @@ window.ytproSabrDownload = async function() {
     updateFormatDisplay();
     closeSettingsSheet();
     showToast("Settings saved successfully!", false);
+    
+    // Auto-Restart stream process using new saved configs instantly
+    triggerAutoProcess();
   });
 
-  // ─── GATEWAY AJAX PROCESS CONTROLLER ───
-  async function handleProcess() {
+  // ─── INSTANT AUTO-PROCESS CONTROLLER ───
+  async function triggerAutoProcess() {
     const match = urlInput.value.match(YT_REGEX);
     if (!match) {
-      showToast("Failed to parse YouTube target ID.");
+      showToast("No video target resolved in background context.");
       return;
     }
     const vidId = match[1];
     const fmt = CONFIG.selectedVal;
     
-    processBtn.disabled = true;
-    const orig = processBtn.innerHTML;
-    processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> QUEUING';
+    // Show Loading inside List State
+    emptyState.style.display = 'flex';
+    emptyState.innerHTML = `
+      <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-3 text-blue-500"></i>
+      <p>Requesting ${CONFIG.activeType.toUpperCase()} - ${fmt.toUpperCase()} conversion pipeline...</p>
+    `;
 
     try {
       const targetUrl = `https://youtu.be/${vidId}?si=mn7eT9qCTNHW149_`;
@@ -398,18 +389,14 @@ window.ytproSabrDownload = async function() {
       if (data.success) {
         const itemId = createItem(data.id, data.title, data.info?.image, fmt, CONFIG.activeType);
         startPoll(data.id, data.progress_url, fmt, itemId);
-        urlInput.value = '';
-        validate(false);
       } else {
-        showToast("API verification rejected. Please verify configuration keys.");
+        emptyState.innerHTML = `<i class="fa-solid fa-circle-exclamation text-xl text-red-500 mb-1"></i> <p class="text-red-400">API rejected conversion request.</p>`;
+        showToast("API token validation rejected.", true);
       }
     } catch (err) {
       console.error(err);
-      showToast("Proxy Gateway connection dropped or timed out.");
-    } finally {
-      processBtn.disabled = false;
-      processBtn.innerHTML = orig;
-      processBtn.style.opacity = '1';
+      emptyState.innerHTML = `<i class="fa-solid fa-wifi text-xl text-gray-600 mb-1"></i> <p>Network gateway timeout.</p>`;
+      showToast("Proxy Gateway connection dropped.", true);
     }
   }
 
@@ -422,7 +409,7 @@ window.ytproSabrDownload = async function() {
     
     const el = document.createElement('div');
     el.id = itemId;
-    el.className = 'bg-gray-900 border border-gray-800 rounded-xl p-2.5 flex gap-3 items-center transition-all duration-300';
+    el.className = 'bg-gray-900 border border-gray-800 rounded-xl p-3 flex gap-3 items-center transition-all duration-300';
     el.innerHTML = `
       <div class="w-20 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-800 shimmer-box relative shadow-inner" id="${itemId}-thumb">
         <img src="${thumbUrl}" class="w-full h-full object-cover hidden relative z-10" alt="thumb" id="${itemId}-img" onload="this.classList.remove('hidden'); document.getElementById('${itemId}-thumb').classList.remove('shimmer-box');">
@@ -431,7 +418,7 @@ window.ytproSabrDownload = async function() {
         <div class="h-3.5 w-11/12 rounded shimmer-box mb-1.5" id="${itemId}-ttl-sh"></div>
         <div class="flex items-center gap-2 mb-1" id="${itemId}-combo-row">
           <span class="bg-blue-600/20 border border-blue-500/20 text-blue-400 font-bold text-[8px] px-1.5 py-0.5 rounded tracking-wider uppercase">${formatLabel}</span>
-          <button onclick="document.getElementById('${itemId}').remove();" class="text-gray-500 hover:text-red-400 transition-colors p-0.5">
+          <button onclick="document.getElementById('${itemId}').remove(); if(document.getElementById('queueList').querySelectorAll('[id^=\\'q-\\']').length === 0) { document.getElementById('emptyState').style.display = 'flex'; document.getElementById('emptyState').innerHTML = '<p>Queue empty</p>'; }" class="text-gray-500 hover:text-red-400 transition-colors p-0.5">
             <i class="fa-solid fa-trash-can text-[9px]"></i>
           </button>
         </div>
@@ -497,7 +484,7 @@ window.ytproSabrDownload = async function() {
     if(!exactUrl) exactUrl = "#";
 
     const dBtn = document.createElement('button');
-    dBtn.className = 'w-full bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold py-1.5 rounded-lg transition-all shadow-lg shadow-green-500/20 mt-1 flex items-center justify-center gap-1.5';
+    dBtn.className = 'w-full bg-green-600 hover:bg-green-500 text-white text-[10px] font-bold py-2 rounded-xl transition-all shadow-lg shadow-green-500/20 mt-1 flex items-center justify-center gap-1.5';
     dBtn.innerHTML = '<i class="fa-solid fa-download"></i> DOWNLOAD READY';
     dBtn.onclick = (e) => {
       e.preventDefault();
@@ -508,11 +495,11 @@ window.ytproSabrDownload = async function() {
     if(targetTextContainer) targetTextContainer.appendChild(dBtn);
   }
 
-  processBtn.addEventListener('click', handleProcess);
-
-  // Initialize
+  // Initialize and Auto Trigger Instantly on Activation
   populateDropdowns();
   updateFormatDisplay();
   applyUIState();
-  validate(false);
+  
+  // Instant Auto Run Loop call
+  setTimeout(() => { triggerAutoProcess(); }, 400);
 };
